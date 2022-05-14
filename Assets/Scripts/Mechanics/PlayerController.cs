@@ -44,6 +44,11 @@ namespace Platformer.Mechanics
 
         public Bounds Bounds => collider2d.bounds;
 
+
+
+        public float scrollSpeed = 0.05f;
+
+
         void Awake()
         {
             health = GetComponent<Health>();
@@ -106,35 +111,51 @@ namespace Platformer.Mechanics
 
         protected override void ComputeVelocity()
         {
-            if (jump && IsGrounded)
-            {
-                //velocity.y = jumpTakeOffSpeed * model.jumpModifier;
-                //Debug.Log(velocity);
-                velocity = force;
-                move.x = force.x;
-                jump = false;
-            }
-            else if (stopJump)
-            {
-                stopJump = false;
-                if (velocity.y > 0)
+            if(controlEnabled){
+                if (jump && IsGrounded)
                 {
-                    velocity.y = velocity.y * model.jumpDeceleration;
+                    //velocity.y = jumpTakeOffSpeed * model.jumpModifier;
+                    //Debug.Log(velocity);
+                    velocity = force;
+                    move.x = force.x;
+                    jump = false;
                 }
+                else if (stopJump)
+                {
+                    stopJump = false;
+                    if (velocity.y > 0)
+                    {
+                        velocity.y = velocity.y * model.jumpDeceleration;
+                    }
+                }else if(IsGrounded){
+                    move *= 0.95f;
+                }
+
+                if (move.x > 0.01f)
+                    spriteRenderer.flipX = false;
+                else if (move.x < -0.01f)
+                    spriteRenderer.flipX = true;
+
+                //壁に当たっても速度がリセットされないので一時的対策.普通に壁判定実装した方が良さそう
+                if(0 == velocity.x){
+                    move *= 0.75f;
+                }
+
+                animator.SetBool("grounded", IsGrounded);
+                animator.SetFloat("velocityX", Mathf.Abs(velocity.x) / maxSpeed);
+
+                //空気抵抗？
+                move *= 0.995f;
+
+                //横スクロール速度
+                move.x += scrollSpeed;
+
+                targetVelocity = move * maxSpeed;
             }
-
-            if (move.x > 0.01f)
-                spriteRenderer.flipX = false;
-            else if (move.x < -0.01f)
-                spriteRenderer.flipX = true;
-
-            animator.SetBool("grounded", IsGrounded);
-            animator.SetFloat("velocityX", Mathf.Abs(velocity.x) / maxSpeed);
-
-            move.x *= 0.95f;
-            move.x += 0.05f;
-
-            targetVelocity = move * maxSpeed;
+            else{
+                move = Vector2.zero;
+                targetVelocity = Vector2.zero;
+            }
         }
 
         public enum JumpState
